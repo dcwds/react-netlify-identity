@@ -76,7 +76,6 @@ export type ReactNetlifyIdentityAPI = {
     provider: Provider,
     autoRedirect: boolean
   ) => string | undefined;
-  settings: Settings;
   param: TokenParam;
   verifyToken: () => Promise<User | undefined>;
 };
@@ -151,14 +150,6 @@ export function useNetlifyIdentity(
         setParam(param);
       }
     }
-  }, []);
-
-  const [settings, setSettings] = useState<Settings>(defaultSettings);
-
-  useEffect(() => {
-    goTrueInstance.settings
-      .bind(goTrueInstance)()
-      .then(x => setSettings(x));
   }, []);
 
   /******* OPERATIONS */
@@ -363,10 +354,27 @@ export function useNetlifyIdentity(
     _url: url,
     loginProvider,
     acceptInviteExternalUrl,
-    settings,
     param,
     verifyToken,
   };
+}
+
+// If one needs to access their identity settings, they can do so by using this hook.
+// Before this abstraction, the settings fetch was embedded in the `useNetlifyIdentity`
+// hook, which was causing unnecessary rerenders as well as some problems during testing
+// with state updates after unmount.
+
+export function useNetlifyIdentitySettings() {
+  const { _goTrueInstance } = useIdentityContext();
+  const [settings, setSettings] = useState<Settings>(defaultSettings);
+
+  useEffect(() => {
+    _goTrueInstance.settings
+      .bind(_goTrueInstance)()
+      .then(x => setSettings(x));
+  }, []);
+
+  return settings;
 }
 
 /**
